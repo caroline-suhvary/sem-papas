@@ -1,0 +1,23 @@
+rules_version = '2';
+// =====================================================================
+// REGRAS DO STORAGE — controlam os anexos dos grupos privados.
+// Sala pública NÃO tem pasta aqui, então nela é impossível enviar arquivos.
+// =====================================================================
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /groups/{groupId}/{fileName} {
+      function membro() {
+        return request.auth != null && request.auth.token.email_verified == true &&
+          request.auth.uid in firestore.get(/databases/(default)/documents/groups/$(groupId)).data.members;
+      }
+      // Arquivos valem 24h: depois disso ninguém mais baixa (o robô apaga).
+      allow read: if membro() && request.time < resource.timeCreated + duration.value(24, 'h');
+      allow create: if membro()
+        && request.resource.size < 2 * 1024 * 1024        // máximo 2 MB
+        && (request.resource.contentType.matches('image/(png|jpeg|gif|webp)')
+            || request.resource.contentType == 'application/pdf'
+            || request.resource.contentType == 'text/plain');
+      allow update, delete: if false;
+    }
+  }
+}

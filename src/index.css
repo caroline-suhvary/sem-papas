@@ -1,0 +1,79 @@
+/* Tailwind v4: um único import ativa todas as classes utilitárias. */
+@import "tailwindcss";
+
+/* Modo escuro controlado pela classe "dark" no <html> (em vez do sistema). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tokens de cor com significado. Para mudar o visual, troque SÓ as
+   variáveis de :root (claro) e .dark (escuro) lá embaixo. */
+@theme {
+  --color-papel: var(--papel);       /* fundo da página */
+  --color-ceu: var(--ceu);           /* fundo do quadro principal */
+  --color-moldura: var(--moldura);   /* borda azul do quadro */
+  --color-cartao: var(--cartao);
+  --color-tinta: var(--tinta);
+  --color-suave: var(--suave);
+  --color-lingua: var(--lingua);     /* vermelho das línguas */
+  --color-mostarda: var(--mostarda);
+  --color-borda: var(--borda);
+  --color-verde: var(--verde);
+  --color-verde-claro: var(--verde-claro);
+  --color-laranja: var(--laranja);
+  --color-laranja-claro: var(--laranja-claro);
+  --color-roxo: var(--roxo);
+  --color-roxo-claro: var(--roxo-claro);
+  --color-rosa: var(--rosa);
+  --color-rosa-claro: var(--rosa-claro);
+  --font-titulo: "Gochi Hand", "Comic Sans MS", cursive;
+  --font-maquina: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+:root {
+  --papel: #f5f9fd;
+  --ceu: #deedfb;
+  --moldura: #4ea3f0;
+  --cartao: #ffffff;
+  --tinta: #24343f;
+  --suave: #8a96a3;
+  --lingua: #e3141f;
+  --mostarda: #ffd166;
+  --borda: #0e8a68;
+  --verde: #0e8a68;
+  --verde-claro: #d4ebe4;
+  --laranja: #e86a1e;
+  --laranja-claro: #fbe3d5;
+  --roxo: #b03ad0;
+  --roxo-claro: #eddaf3;
+  --rosa: #f37b7b;
+  --rosa-claro: #f8dadd;
+}
+.dark {
+  --papel: #0d1620;
+  --ceu: #142333;
+  --moldura: #4ea3f0;
+  --cartao: #1b2c3d;
+  --tinta: #e6eef5;
+  --suave: #8ea2b4;
+  --lingua: #ff4b55;
+  --mostarda: #f2c14e;
+  --borda: #2fc79c;
+  --verde: #2fc79c;
+  --verde-claro: #16332d;
+  --laranja: #ff8a45;
+  --laranja-claro: #3a2618;
+  --roxo: #cf6cec;
+  --roxo-claro: #321f3c;
+  --rosa: #ff8f8f;
+  --rosa-claro: #3a2026;
+}
+
+body {
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--font-maquina);
+}
+
+/* Sombra suave usada em botões e cartões. */
+@utility sombra-pop {
+  box-shadow: 0 3px 0 color-mix(in oklab, var(--tinta) 15%, transparent);
+}

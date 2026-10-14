@@ -1,0 +1,110 @@
+rules_version = '2';
+// =====================================================================
+// REGRAS DO FIRESTORE — o "porteiro" do banco de dados.
+// O código do navegador pode ser alterado por qualquer pessoa, então
+// TODA regra importante (limites, quem pode ler) precisa estar AQUI.
+// O robô de limpeza (scripts/limpeza.mjs) usa chave de administrador
+// e NÃO passa por estas regras — por isso só ele apaga contas e chats.
+// =====================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado() { return request.auth != null; }
+    // E-mail confirmado (contas Google já chegam confirmadas).
+    function verificado() { return logado() && request.auth.token.email_verified == true; }
+    function textoValido(t) { return t is string && t.size() >= 1 && t.size() <= 1000; }
+    function statsPath() { return /databases/$(database)/documents/meta/stats; }
+    function contasAntes() { return exists(statsPath()) ? get(statsPath()).data.accounts : 0; }
+
+    // ---------------- SALA PÚBLICA (some após 24h) ----------------
+    match /public_messages/{msgId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['text', 'authorName', 'createdAt'])
+        && textoValido(request.resource.data.text)
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() <= 40
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // ---------------- CONTADOR DE CONTAS (máx. 100) ----------------
+    // Só pode subir de 1 em 1, junto com a criação de um perfil novo.
+    match /meta/stats {
+      allow read: if logado();
+      allow create, update: if logado()
+        && request.resource.data.keys().hasOnly(['accounts'])
+        && request.resource.data.accounts == contasAntes() + 1
+        && request.resource.data.accounts <= 100
+        && !exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && existsAfter(/databases/$(database)/documents/users/$(request.auth.uid));
+      allow delete: if false;
+    }
+
+    // ---------------- PERFIL DO USUÁRIO ----------------
+    match /users/{uid} {
+      function camposOk() {
+        return request.resource.data.keys().hasOnly(['name', 'email', 'groups', 'createdAt', 'lastSeen', 'warnedAt'])
+          && request.resource.data.groups is list
+          && request.resource.data.groups.size() <= 5;
+      }
+      allow read: if logado() && request.auth.uid == uid;
+      // Criar: só junto com o contador subindo (mesma transação).
+      allow create: if logado() && request.auth.uid == uid && camposOk()
+        && request.resource.data.email == request.auth.token.get('email', '')
+        && request.resource.data.lastSeen == request.time
+        && getAfter(statsPath()).data.accounts == contasAntes() + 1;
+      allow update: if logado() && request.auth.uid == uid && camposOk()
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (!('warnedAt' in request.resource.data) || request.resource.data.warnedAt == resource.data.get('warnedAt', null));
+      allow delete: if false;
+    }
+
+    // ---------------- GRUPOS PRIVADOS ----------------
+    match /groups/{groupId} {
+      function membros() { return resource.data.members; }
+      function novosMembros() { return request.resource.data.members; }
+      function souMembro() { return logado() && request.auth.uid in membros(); }
+
+      allow get: if logado();
+      allow list: if logado() && request.auth.uid in resource.data.members;
+
+      allow create: if verificado()
+        && request.resource.data.keys().hasOnly(['name', 'createdBy', 'members'])
+        && request.resource.data.createdBy == request.auth.uid
+        && novosMembros() == [request.auth.uid]
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 40
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.groups.size() <= 5;
+
+      // Só a lista de membros muda (o campo "expiring" é exclusivo do robô).
+      allow update: if verificado()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+        && (
+          (novosMembros().hasAll(membros())
+            && novosMembros().removeAll(membros()) == [request.auth.uid]
+            && novosMembros().size() <= 6
+            && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.groups.size() <= 5)
+          ||
+          (souMembro()
+            && membros().removeAll(novosMembros()) == [request.auth.uid]
+            && membros().hasAll(novosMembros()))
+        );
+      allow delete: if logado() && resource.data.createdBy == request.auth.uid;
+
+      // Mensagens: duram 6 meses (o robô apaga as mais antigas).
+      match /messages/{msgId} {
+        function grupo() { return get(/databases/$(database)/documents/groups/$(groupId)).data; }
+        allow read: if verificado() && request.auth.uid in grupo().members;
+        allow create: if verificado()
+          && request.auth.uid in grupo().members
+          && grupo().members.size() >= 2
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.createdAt == request.time
+          && (request.resource.data.text == '' || textoValido(request.resource.data.text))
+          && request.resource.data.text.size() <= 1000;
+        allow update, delete: if false;
+      }
+    }
+  }
+}

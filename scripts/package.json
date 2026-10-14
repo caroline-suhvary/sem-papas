@@ -1,0 +1,10 @@
+{
+  "name": "sem-papas-limpeza",
+  "private": true,
+  "type": "module",
+  "scripts": { "limpeza": "node limpeza.mjs" },
+  "dependencies": {
+    "firebase-admin": "^13.0.0",
+    "nodemailer": "^6.9.16"
+  }
+}

@@ -1,0 +1,31 @@
+# Robô de limpeza do Sem Papas: roda todo dia às 06:17 UTC (03:17 em Brasília).
+# Também pode ser executado manualmente em Actions → "Limpeza diária" → Run workflow.
+name: Limpeza diária
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      simular:
+        description: "Só simular (não apaga nada)? 1 = sim, 0 = não"
+        default: "1"
+jobs:
+  limpeza:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: node limpeza.mjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          APP_URL: ${{ secrets.APP_URL }}
+          SIMULAR: ${{ github.event.inputs.simular || '0' }}
