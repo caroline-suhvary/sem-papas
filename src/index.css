@@ -7,13 +7,13 @@
 /* Tokens de cor com significado. Para mudar o visual, troque SÓ as
    variáveis de :root (claro) e .dark (escuro) lá embaixo. */
 @theme {
-  --color-papel: var(--papel);       /* fundo da página */
-  --color-ceu: var(--ceu);           /* fundo do quadro principal */
-  --color-moldura: var(--moldura);   /* borda azul do quadro */
+  --color-papel: var(--papel); /* fundo da página */
+  --color-ceu: var(--ceu); /* fundo do quadro principal */
+  --color-moldura: var(--moldura); /* borda azul do quadro */
   --color-cartao: var(--cartao);
   --color-tinta: var(--tinta);
   --color-suave: var(--suave);
-  --color-lingua: var(--lingua);     /* vermelho das línguas */
+  --color-lingua: var(--lingua); /* vermelho das línguas */
   --color-mostarda: var(--mostarda);
   --color-borda: var(--borda);
   --color-verde: var(--verde);
@@ -76,4 +76,35 @@ body {
 /* Sombra suave usada em botões e cartões. */
 @utility sombra-pop {
   box-shadow: 0 3px 0 color-mix(in oklab, var(--tinta) 15%, transparent);
+}
+/* --- Barra de Rolagem Grossa e Semi-Transparente --- */
+
+/* Força em todos os elementos com rolagem, incluindo a página e a sidebar */
+*::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 18px !important; /* Grossa e bem destacada */
+  height: 18px !important;
+}
+
+*::-webkit-scrollbar-track,
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-radius: 9px;
+}
+
+*::-webkit-scrollbar-thumb,
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.32) !important;
+  border-radius: 9px;
+  border: 3px solid transparent !important;
+  background-clip: padding-box !important;
+}
+
+*::-webkit-scrollbar-thumb:hover,
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.55) !important;
 }
